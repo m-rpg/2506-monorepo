@@ -1,51 +1,80 @@
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { Context } from "./Context";
 import { db } from "./db";
 import { User } from "./db/schema";
+import { Result } from "./types/Result";
 
-const t = initTRPC.create();
-
-const publicProcedure = t.procedure;
-const router = t.router;
+const t = initTRPC.context<Context>().create();
 
 const SALT_ROUNDS = 10;
 
-export const appRouter = router({
-  login: publicProcedure
+export const appRouter = t.router({
+  login: t.procedure
     .input(
       z.object({
         username: z.string(),
         password: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
-      const [user] = await db
-        .select()
-        .from(User)
-        .where(eq(User.login, input.username))
-        .limit(1);
+    .mutation(
+      async ({
+        input,
+        ctx,
+      }): Promise<
+        Result<
+          string,
+          "Already logged in" | "User not found or invalid password"
+        >
+      > => {
+        if (ctx.type === "authenticated") {
+          return { success: false, error: "Already logged in" };
+        }
 
-      if (!user) {
-        return { success: false, error: "User not found" };
+        const [user] = await db
+          .select()
+          .from(User)
+          .where(eq(User.login, input.username))
+          .limit(1);
+
+        if (!user) {
+          return {
+            success: false,
+            error: "User not found or invalid password",
+          };
+        }
+
+        const passwordMatch = await bcrypt.compare(
+          input.password,
+          user.password
+        );
+        if (!passwordMatch) {
+          return {
+            success: false,
+            error: "User not found or invalid password",
+          };
+        }
+
+        const token = crypto.randomUUID();
+        await db.update(User).set({ token }).where(eq(User.id, user.id));
+
+        return { success: true, data: token };
       }
-
-      const passwordMatch = await bcrypt.compare(input.password, user.password);
-      if (!passwordMatch) {
-        return { success: false, error: "User not found" };
-      }
-
-      return { success: true, user };
-    }),
-  register: publicProcedure
+    ),
+  register: t.procedure
     .input(
       z.object({
         username: z.string().min(1),
         password: z.string().min(1),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.type === "authenticated") {
+        return { success: false, error: "Already logged in" };
+      }
+
       const salt = await bcrypt.genSalt(SALT_ROUNDS);
       const hashedPassword = await bcrypt.hash(input.password, salt);
       const user = await db.insert(User).values({
@@ -54,6 +83,13 @@ export const appRouter = router({
       });
       return { success: true, user };
     }),
+  hello: t.procedure.query(async ({ ctx }) => {
+    if (ctx.type !== "authenticated") {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+
+    return { message: `Hello, ${ctx.user.login}!` };
+  }),
 });
 
 export type AppRouter = typeof appRouter;
