@@ -1,4 +1,5 @@
 import { trpcServer } from "@hono/trpc-server"; // Deno 'npm:@hono/trpc-server'
+import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -25,7 +26,7 @@ app.use(
             })
           : null;
       if (user === undefined) {
-        throw new Error("Unauthorized");
+        throw new TRPCError({ code: "UNAUTHORIZED" });
       }
       if (user === null) {
         return { type: "unauthenticated" };
