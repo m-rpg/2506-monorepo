@@ -1,0 +1,27 @@
+{
+  "name": "server",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/node": "^22.15.23",
+    "@types/pg": "^8.15.2",
+    "dotenv": "^16.5.0",
+    "drizzle-kit": "^0.31.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.3",
+    "@hono/trpc-server": "^0.3.4",
+    "@trpc/server": "^11.1.3",
+    "bcrypt": "^6.0.0",
+    "drizzle-orm": "^0.43.1",
+    "hono": "^4.7.10",
+    "pg": "^8.16.0",
+    "zod": "^3.25.32"
+  }
+}

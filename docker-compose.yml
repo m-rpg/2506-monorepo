@@ -1,0 +1,11 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: m-rpg-2506
+      POSTGRES_PASSWORD: m-rpg-2506
+      POSTGRES_DB: m-rpg-2506
+    ports:
+      - 5432:5432
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data
