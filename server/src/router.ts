@@ -1,13 +1,11 @@
-import { initTRPC, TRPCError } from "@trpc/server";
+import { TRPCError } from "@trpc/server";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { Context } from "./Context";
 import { db } from "./db";
 import { User } from "./db/schema";
+import { t } from "./t";
 import { Result } from "./types/Result";
-
-const t = initTRPC.context<Context>().create();
 
 const SALT_ROUNDS = 10;
 
